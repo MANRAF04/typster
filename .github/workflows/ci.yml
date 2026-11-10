@@ -5,11 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-24.04
+    env:
+      # Tests don't need debug info; it slows the build and bloats the cache.
+      CARGO_PROFILE_DEV_DEBUG: 0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -18,11 +26,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      # Optimized dependencies help the local preview, not the tests.
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --config 'profile.dev.package."*".opt-level=0'
