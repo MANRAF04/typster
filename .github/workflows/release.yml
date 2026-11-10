@@ -1,16 +1,18 @@
 name: Release
 
-# Builds installers for every platform into a draft GitHub release.
+# Builds installers for every platform into a draft GitHub release, then
+# publishes it once all of them succeed.
 # Push a tag like v0.1.0 (matching the version in tauri.conf.json) to run it.
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch:
 
 jobs:
   build:
     permissions:
       contents: write
+    outputs:
+      release-id: ${{ steps.tauri.outputs.releaseId }}
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +28,16 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
+      # The release is named after the app version, so a mismatched tag would
+      # upload into an older, already published release.
+      - name: Check the tag matches the app version
+        shell: bash
+        run: |
+          version=$(jq -r .version src-tauri/tauri.conf.json)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match version $version in tauri.conf.json"
+            exit 1
+          fi
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
@@ -51,6 +63,7 @@ jobs:
           ["https://github.com/${{ github.repository }}/releases/latest/download/latest.json"]}}}'
           > src-tauri/tauri.release.conf.json
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -62,3 +75,16 @@ jobs:
           releaseDraft: true
           includeUpdaterJson: true
           args: --config src-tauri/tauri.release.conf.json ${{ matrix.args }}
+
+  # Only a complete release goes public, so the updater never sees a partial one.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          gh api -X PATCH repos/${{ github.repository }}/releases/${{ needs.build.outputs.release-id }}
+          -F draft=false -f make_latest=true

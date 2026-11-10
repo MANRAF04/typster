@@ -64,7 +64,7 @@ You can also open a folder or file from the terminal: `typster path/to/thesis`.
 
 ### Publishing releases
 
-Push a tag that matches the version in `src-tauri/tauri.conf.json` (for example `v0.1.0`). The release workflow builds every platform into a draft release; publishing the draft is what makes installed copies update.
+Bump the version in `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `package.json`, commit, then push a matching tag (for example `git tag v0.2.0 && git push origin main v0.2.0`). The release workflow builds every platform into a draft release and publishes it once all of them succeed, which is what makes installed copies update. If a build fails, the release stays a draft. A tag that doesn't match the version stops the workflow before it builds anything.
 
 Updates are signed. The public key is in `tauri.conf.json`; the private key must be stored as the repository secret `TAURI_SIGNING_PRIVATE_KEY` (and its password, if it has one, as `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). To create a new pair, run `pnpm tauri signer generate -w ~/.tauri/typster.key` and put the new public key in `tauri.conf.json`. Keep the private key safe: without it, existing installs can't verify new updates.
 
