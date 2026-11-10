@@ -1,14 +1,62 @@
 name: Release
 
-# Builds installers for every platform into a draft GitHub release, then
-# publishes it once all of them succeed.
-# Push a tag like v0.1.0 (matching the version in tauri.conf.json) to run it.
+# Run it from the Actions tab: pick a branch and type the new version. It bumps
+# the version on that branch, builds every platform into a draft release, and
+# publishes the release (creating its tag) once all of them succeed.
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: New version, for example 0.2.0
+        required: true
+
+concurrency: release
 
 jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check the version
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$VERSION is not a version like 0.2.0"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" > /dev/null; then
+            echo "::error::v$VERSION is already released"
+            exit 1
+          fi
+      - name: Set the version
+        run: |
+          sed -i "s/^  \"version\": \".*\",$/  \"version\": \"$VERSION\",/" src-tauri/tauri.conf.json package.json
+          sed -i "0,/^version = /s/^version = .*/version = \"$VERSION\"/" src-tauri/Cargo.toml
+          sed -i "/^name = \"typster\"$/{n;s/^version = .*/version = \"$VERSION\"/}" src-tauri/Cargo.lock
+          for file in src-tauri/tauri.conf.json package.json src-tauri/Cargo.toml; do
+            grep -qF "\"$VERSION\"" "$file" || { echo "::error::Couldn't set the version in $file"; exit 1; }
+          done
+          grep -A1 '^name = "typster"$' src-tauri/Cargo.lock | grep -qF "version = \"$VERSION\"" \
+            || { echo "::error::Couldn't set the version in Cargo.lock"; exit 1; }
+      - name: Commit the version
+        id: commit
+        run: |
+          # A rerun after a failed build finds the version already committed.
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "Release v$VERSION"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: bump
     permissions:
       contents: write
     outputs:
@@ -28,16 +76,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v7
-      # The release is named after the app version, so a mismatched tag would
-      # upload into an older, already published release.
-      - name: Check the tag matches the app version
-        shell: bash
-        run: |
-          version=$(jq -r .version src-tauri/tauri.conf.json)
-          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME doesn't match version $version in tauri.conf.json"
-            exit 1
-          fi
+        with:
+          ref: ${{ needs.bump.outputs.sha }}
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
@@ -74,6 +114,8 @@ jobs:
           releaseBody: Download the installer for your platform below.
           releaseDraft: true
           includeUpdaterJson: true
+          # The tag must point at the version commit, not the commit the run started on.
+          releaseCommitish: ${{ needs.bump.outputs.sha }}
           args: --config src-tauri/tauri.release.conf.json ${{ matrix.args }}
 
   # Only a complete release goes public, so the updater never sees a partial one.
