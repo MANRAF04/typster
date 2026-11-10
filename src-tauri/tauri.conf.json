@@ -75,7 +75,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlGN0Y3MTBDQzU0NUQ1NjAKUldSZzFVWEZESEYvbnl5enFodWc1am83czI5ZGN4RDRaYTI4Z3llMFhiK1NNM01XbFVJc2FBcFUK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDdCQzNDQUNFRDAwRDUyOTMKUldTVFVnM1F6c3JEZTR6ZUd2dGs4NE05a1c0SFkyUG5EaGpUVGVucDBpVHdXeHl3bHBaWlphTHAK",
       "endpoints": [
         "https://github.com/MANRAF04/typster/releases/latest/download/latest.json"
       ]
