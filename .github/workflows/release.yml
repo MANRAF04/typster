@@ -1,0 +1,64 @@
+name: Release
+
+# Builds installers for every platform into a draft GitHub release.
+# Push a tag like v0.1.0 (matching the version in tauri.conf.json) to run it.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            args: --target x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: windows-latest
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev librsvg2-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Release builds sign update packages and look for updates in this repository.
+      - name: Configure updates
+        shell: bash
+        run: >
+          echo '{"bundle": {"createUpdaterArtifacts": true}, "plugins": {"updater": {"endpoints":
+          ["https://github.com/${{ github.repository }}/releases/latest/download/latest.json"]}}}'
+          > src-tauri/tauri.release.conf.json
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Typster v__VERSION__
+          releaseBody: Download the installer for your platform below.
+          releaseDraft: true
+          includeUpdaterJson: true
+          args: --config src-tauri/tauri.release.conf.json ${{ matrix.args }}

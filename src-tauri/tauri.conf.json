@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Typster",
+  "version": "0.1.0",
+  "identifier": "dev.typster.editor",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Typster",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 720,
+        "minHeight": 480
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'",
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Productivity",
+    "shortDescription": "Typst editor with live preview and live sharing",
+    "fileAssociations": [
+      {
+        "ext": [
+          "typ"
+        ],
+        "name": "Typst document",
+        "description": "Typst document",
+        "role": "Editor",
+        "mimeType": "text/vnd.typst",
+        "exportedType": {
+          "identifier": "dev.typster.typst-document",
+          "conformsTo": [
+            "public.plain-text"
+          ]
+        }
+      }
+    ],
+    "macOS": {
+      "signingIdentity": "-"
+    },
+    "linux": {
+      "deb": {
+        "desktopTemplate": "linux/typster.desktop",
+        "files": {
+          "/usr/share/mime/packages/typster.xml": "linux/typst-mime.xml"
+        }
+      },
+      "rpm": {
+        "desktopTemplate": "linux/typster.desktop",
+        "files": {
+          "/usr/share/mime/packages/typster.xml": "linux/typst-mime.xml"
+        }
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlGN0Y3MTBDQzU0NUQ1NjAKUldSZzFVWEZESEYvbnl5enFodWc1am83czI5ZGN4RDRaYTI4Z3llMFhiK1NNM01XbFVJc2FBcFUK",
+      "endpoints": [
+        "https://github.com/MANRAF04/typster/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

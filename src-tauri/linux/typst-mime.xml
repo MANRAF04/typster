@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Newer shared-mime-info ships this type; older distributions need it to recognize .typ files. -->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/vnd.typst">
+    <comment>Typst document</comment>
+    <sub-class-of type="text/plain"/>
+    <glob pattern="*.typ"/>
+  </mime-type>
+</mime-info>

@@ -1,0 +1,39 @@
+[package]
+name = "typster"
+version = "0.1.0"
+description = "Fast cross-platform Typst editor with live preview and peer-to-peer live sharing"
+edition = "2024"
+license = "MIT"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-process = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+typst = "=0.15.1"
+typst-layout = "=0.15.1"
+typst-ide = "=0.15.1"
+typst-svg = "=0.15.1"
+typst-pdf = "=0.15.1"
+typst-kit = { version = "=0.15.1", features = ["embedded-fonts", "scan-fonts", "system-packages", "system-downloader", "datetime"] }
+iroh = "1.3"
+iroh-tickets = "1"
+tokio = { version = "1", features = ["sync", "time", "io-util", "macros", "rt"] }
+getrandom = "0.3"
+trash = "5"
+
+# Typst is unusably slow unoptimized; keep our own crate fast to rebuild.
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
