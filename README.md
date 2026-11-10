@@ -33,6 +33,8 @@ Things to know:
 
 Download the installer for your platform from [Releases](../../releases). Installing registers Typster for `.typ` files. Typster checks for new versions on launch and offers to install them (on Linux this works for the AppImage; the `.deb` and `.rpm` update through your package manager).
 
+On Arch, EndeavourOS and other distributions without `.deb` or `.rpm` support, use the AppImage. It needs FUSE 2 (`sudo pacman -S fuse2` on Arch), then make the file executable and run it.
+
 Builds are not code signed yet, so macOS and Windows warn the first time you open the app. On macOS, right click the app and choose **Open**; on Windows, choose **More info** and then **Run anyway**.
 
 ## Build from source
